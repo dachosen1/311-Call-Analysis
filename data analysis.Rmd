@@ -1,0 +1,118 @@
+---
+title: "Strategy and Analytics Extra Credit Project"
+author: "Anderson Nelson "
+date: "03/09/2019"
+output:
+  prettydoc::html_pretty:
+  theme: cayman
+highlight: github
+---
+
+
+### Summary: 
+A startup company has an innovative and sophisticated product that can take speech inputs to more accurately than anything on the market today (based on a robust analytical engine) either route calls to the appropriate group or provide accurate information
+
+### Approach: 
+Analyzed data collected from 311 since Feb 1, 2019, which represents a small sample size of the available data on the 311 websites. The purpose is to get a general understanding. 
+
+
+```{r include=FALSE}
+setwd('C:\\Users\\Anderson\\Dropbox\\Columbia University\\Spring 2019\\Strategy & Analytics\\data')
+```
+
+
+```{r include=FALSE}
+set.seed(72)
+knitr::opts_chunk$set(echo = TRUE, comment="", warning = FALSE, message = FALSE, tidy.opts=list(width.cutoff=55))
+```
+
+
+```{r message=FALSE, warning=FALSE}
+# libraries 
+library(stringr); library(qdap); library(data.table); library(tidytext)
+
+# read the data 
+data <- fread('311_Call_Center_Inquiry.csv')
+```
+
+
+```{r}
+data.agency.name.count <- nrow(data[,.N, by = AGENCY_NAME])
+data.agency.name.count
+```
+
+There are 167 agencies in the data set, it's not practical to focus on all them. To get a high-level view of the types of cases to focus on I'm going to focus on the top 5 agency name, the data indicates that they represent over half of the types of the claims filed. 
+
+```{r}
+# view data by agency 
+data_by_agency <- data[,.N, by = AGENCY_NAME]
+setorder(data_by_agency, -N)
+data_by_agency
+
+# top 5 agency
+top_5_agency <- data_by_agency[1:5]
+top_5_agency
+
+# top 5 as a perfecentage of total agency 
+sum(data_by_agency[1:5]$N) / sum(data_by_agency$N)
+
+# filter data for top 5 agency 
+top_agency_name <- top_5_agency$AGENCY_NAME
+data.top5 <- data[data$AGENCY_NAME %in% top_agency_name, ]
+```
+
+Now that we have filtered the data to only include the top 5 agencies. The next step is to analyze the inquiry to understand what kinds of claims are filed with each agency. 
+
+```{r}
+# top 10 words by inquiry name for all 5 agency 
+data.top5[,freq_terms(text.var = data.top5$INQUIRY_NAME, stopwords = Top200Words, top = 10)]
+```
+
+The issued resolved by the top 5 departments have a wide range, segmenting the text by the agency might provide insight onto specialty. 
+
+```{r}
+# Department of Finance 
+data.dept.finance <- data.top5[data.top5$AGENCY_NAME %in% top_agency_name[1]]
+data.dept.finance[,freq_terms(text.var = data.dept.finance$INQUIRY_NAME, stopwords = Top200Words, top = 15)]
+```
+
+From the analysis, calls should be routed to the department of finance is it contains language such as ticket, property, tax, license plate and towing. 
+
+```{r}
+# NYPD
+data.NYPD <- data.top5[data.top5$AGENCY_NAME %in% top_agency_name[2]]
+data.NYPD[,freq_terms(text.var = data.NYPD$INQUIRY_NAME, stopwords = Top200Words, top = 15)]
+
+```
+
+NYPD, handles calls with complaints, noise, location, blocking, driveway, illegal and dangerous situations. 
+
+Note, there is an overlap with the department of finance at the keyword vehicle. However, a contextual analysis would be able to distinguish if the call is about the financial claim or request. 
+
+```{r}
+# 311 call center
+data.311 <- data.top5[data.top5$AGENCY_NAME %in% top_agency_name[3]]
+data.311[,freq_terms(text.var = data.311$INQUIRY_NAME, stopwords = Top200Words, top = 15)]
+```
+The 311 call center seem to center around general claims. Calls where users request to understand information, status, make a request or service, alert authorities, general assistance should be routed to this division. 
+
+```{r}
+# Department of sanitation 
+data.dept.sani <- data.top5[data.top5$AGENCY_NAME %in% top_agency_name[4]]
+data.dept.sani[,freq_terms(text.var = data.dept.sani$INQUIRY_NAME, stopwords = Top200Words, top = 15)]
+
+```
+The department of sanitation is largely focused on the collection of garbage. Claims with text such as collection, recycling, disposal, garbage, trash, and removal should be routed to this department. 
+
+
+```{r}
+# Department of Housing perservation and Development
+data.dept.hous.pd <- data.top5[data.top5$AGENCY_NAME %in% top_agency_name[5]]
+data.dept.hous.pd[,freq_terms(text.var = data.dept.hous.pd$INQUIRY_NAME, stopwords = Top200Words, top = 15)]
+
+```
+
+The department of housing and property deals with issues related to the property. claims with keywords such as apartment, heat, residential, maintenance, a building should be routed to this department.  
+
+Text analysis was able to discover the theme present in the claims by customers. The keywords that are presented in the different claims, however, with contextual analysis, it's possible to correctly classify. 
+
